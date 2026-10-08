@@ -1,1 +1,69 @@
 
+local function SafeParent(gui)
+    local ok = pcall(function() gui.Parent = CoreGui end)
+    if not ok or not gui.Parent then
+        local pg = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        if pg then gui.Parent = pg end
+    end
+end
+local unloaded = false
+local activeConnections = {}
+local function TrackConnection(conn)
+    activeConnections[#activeConnections + 1] = conn
+    return conn
+end
+-- ================= TRẠNG THÁI =================
+local remoteHackActive, noclipActive, speedActive, infJumpActive = false, false, false, false
+local espPlayerActive, uiLocked, invis_on = false, false, false
+local invis_transparency = 0.75
+local shiftLockActive, fpsBoostActive = false, false
+local crosshairState = 0
+local Btn = {}
+local Speed = {
+    Run = 32, LightScale = 1.0125, Level = 0, Owned = false,
+    Humanoid = nil, Base = nil, Applied = nil,
+}
+local FH
+local Fly = { Active = false, Speed = 60 }
+local Follow = {
+    Target = nil, AutoFarm = false, Picking = false, Token = 0, Distance = 10,
+    RandomActive = false, RandomToken = 0, RandomInterval = 3 * 60, RandomNextAt = 0,
+    AutoBeastActive = false, AutoBeastToken = 0, AutoBeastMap = nil,
+    IdleSince = 0, IdleReminderSent = false,
+    List = {}, Rows = {}, Key = nil, Frame = nil,
+    Beat = 0, RestartAt = 0, KeyDown = false, TConn = nil, InAt = 0,
+    Debug = false,
+    PauseUntil = 0,   -- AI chat chỉ "báo" cho Follow tạm nghỉ (emote...), không tự điều khiển
+}
+-- AutoHide = AutoEvade: chạy / lách beast, hết nguy hiểm thì làm tiếp việc cũ
+local AH = {
+    Active = false, Token = 0, State = "idle", BusyFlag = false,
+    Cool = 0, EvalAt = 0,
+    NextTapAt = 0, TapDown = false, TapUntil = 0, TapRed = false,
+    Last = { danger = false, dist = math.huge },
+    SeeRange = 75,
+    NearRange = 32,
+    LeaveRange = 70,
+    SafeTime = 1.2,
+    AvoidRange = 22,
+    JukeRange = 26,      -- beast đang áp sát: lách ngắn theo một lối trống rồi tiếp tục chạy
+    Dir = nil,
+    ScanSegs = 5,
+    SegLen = 4,
+}
+local AR = {
+    Active = false, Token = 0, BusyFlag = false,
+    Held = nil, KeyDown = false, PodAt = 0, PodList = {}, InAt = 0,
+    Pick = nil, PickAt = 0,
+    Skip = setmetatable({}, { __mode = "k" }),
+}
+-- AutoTroll: giữ E rồi nhả theo chu kỳ trên 1 cửa để cửa không mở được
+local TR = {
+    Active = false, Token = 0, BusyFlag = false,
+    Mode = "off", Target = nil, Picking = false, List = {}, Rows = {}, Key = nil,
+    FrontDistance = 3.2, CollisionParts = {}, CollisionChar = nil, CollisionAt = 0,
+    Held = nil, KeyDown = false, InAt = 0,
+    HoldTime = 0.85,
+    Gap = 0.15,
+    Door = nil, Trig = nil,
+}
